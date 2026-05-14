@@ -18,7 +18,7 @@ deep-research-backed instructions to improve migration quality.
 
 ## Prerequisites
 
-- **Kusto MCP server** must be available for querying migration data
+- **azure-kusto** skill must be available for querying migration data
 - **Web search** capability for researching issues and finding up-to-date guidance
 
 ## Workflow
@@ -38,25 +38,18 @@ deep-research-backed instructions to improve migration quality.
 
 ### Step 2: Query Kusto for issues
 
-Run the following Kusto query using the Kusto MCP server, substituting the
-user's runId:
+Run the following Kusto query using skill `azure-kusto` against 
+
+- cluster: https://springbootmigration.eastus.kusto.windows.net
+- database: benchmark
+- Query
 
 ```kql
-// PLACEHOLDER: Replace with actual Kusto query
-// The query should return all issues/errors for the given runId.
-// Expected columns at minimum: issue description/message, severity, component
-//
-// Example structure (update with your actual table and columns):
-//
-// MigrationIssues
-// | where RunId == "<runId>"
-// | project Timestamp, Component, Severity, IssueMessage, Details
-// | order by Timestamp asc
+summarize_benchmark_run(<runId>)
+| mv-expand Issues to typeof(string)
+| where isnotempty(Issues)
+| project Issues
 ```
-
-> **Note to skill user**: Before first use, replace the placeholder query above
-> with your actual Kusto query. The query should return all issues associated
-> with a given runId. Make sure to parameterize the runId.
 
 Save the raw query results to `<folder>/issues.txt` — one issue per line, with
 all returned columns preserved. If the query returns structured data (e.g., a
@@ -163,7 +156,7 @@ After generating the instructions file, present the user with:
 
 ## Tips
 
-- If the Kusto MCP server is not available, ask the user how to connect or
+- If the skill `azure-kusto` is not available, ask the user how to connect or
   whether they can provide the issues data directly (e.g., paste or file).
 - If web search is unavailable, still produce instructions based on your
   existing knowledge, but flag that research was limited.
