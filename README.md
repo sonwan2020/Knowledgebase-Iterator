@@ -14,6 +14,7 @@ Given one or more migration **run IDs**, this tool:
 ## Output Structure
 
 Each analysis produces a timestamped folder containing:
+
 - **Single run**: `<runId>-<YYYYMMDDHHMI>/`
 - **Multiple runs**: `multi-<YYYYMMDDHHMI>/`
 
@@ -34,12 +35,13 @@ Each analysis produces a timestamped folder containing:
 
 In Copilot CLI agent mode, invoke the skill by asking:
 
-```
+```text
 analyze run <runId>
 analyze runs <runId1> <runId2> <runId3>
 ```
 
 Or any variation like:
+
 - "check migration issues for run 25838804895"
 - "what went wrong in run 25838769390"
 - "group the issues from run <id>"
@@ -57,17 +59,17 @@ Edit `.claude/skills/migration-issue-analyzer/config.md` to change:
 
 From a typical run analysis:
 
-```
+```text
 Count | Severity | KB Rule | Issue Group
 ------|----------|---------|------------
+   1  | Critical | —       | Non-existent SDK type causes compile error
   11  | Major    | KB-10   | Upload-semantics drift (missing overwrite:true)
    5  | Major    | KB-11   | BlobDownloadStreamingResult not disposed
-   1  | Critical | —       | Non-existent SDK type causes compile error
 ```
 
 ## Architecture
 
-```
+```text
 .claude/skills/migration-issue-analyzer/
 ├── SKILL.md       # Skill definition and workflow
 └── config.md      # Kusto connection and query config
