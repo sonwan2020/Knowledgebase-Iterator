@@ -4,20 +4,22 @@ Automated analysis of .NET-to-Azure migration runs — queries issues from Kusto
 
 ## What It Does
 
-Given a migration **run ID**, this tool:
+Given one or more migration **run IDs**, this tool:
 
-1. **Queries Azure Data Explorer (Kusto)** for all issues produced during a migration benchmark run
+1. **Queries Azure Data Explorer (Kusto)** for all issues produced during migration benchmark runs (supports multiple run IDs — merges and deduplicates across runs)
 2. **Semantically groups** issues by root cause (not string matching), tracking severity and KB rule references
 3. **Researches each group** against Microsoft docs, SDK references, and community solutions
 4. **Generates actionable instructions** to create or update KB rules, improving future migration quality
 
 ## Output Structure
 
-Each analysis produces a timestamped folder (`<runId>-<YYYYMMDDHHMI>/`) containing:
+Each analysis produces a timestamped folder containing:
+- **Single run**: `<runId>-<YYYYMMDDHHMI>/`
+- **Multiple runs**: `multi-<YYYYMMDDHHMI>/`
 
 | File | Description |
 |------|-------------|
-| `issues.txt` | Raw issues from Kusto, one per line |
+| `issues.txt` | Raw issues from Kusto (merged and deduplicated when using multiple runs) |
 | `grouped-issues.txt` | Semantic groups sorted by severity and count |
 | `migration-instructions.md` | Deep-research instructions per group with KB rule recommendations |
 
@@ -34,12 +36,14 @@ In Copilot CLI agent mode, invoke the skill by asking:
 
 ```
 analyze run <runId>
+analyze runs <runId1> <runId2> <runId3>
 ```
 
 Or any variation like:
 - "check migration issues for run 25838804895"
 - "what went wrong in run 25838769390"
 - "group the issues from run <id>"
+- "analyze these runs: 123, 456, 789"
 
 ## Configuration
 

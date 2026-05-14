@@ -2,23 +2,25 @@
 name: migration-issue-analyzer
 description: >
   Analyze migration run issues from Kusto, group them semantically, and produce
-  actionable improvement instructions. Use this skill whenever the user wants to
-  analyze a migration run, investigate migration issues, group or categorize
-  migration errors, research migration failures, or generate migration
-  improvement guidance. Triggers on phrases like "analyze run", "check migration
-  issues", "what went wrong in run X", "group the issues", or any mention of a
-  runId combined with migration analysis intent.
+  actionable improvement instructions for KB rules. Accepts one or multiple
+  runIds — queries issues for all runs, merges and deduplicates them, then
+  groups and researches. Use this skill whenever the user wants to analyze a
+  migration run, investigate migration issues, group or categorize migration
+  errors, research migration failures, or generate migration improvement
+  guidance. Triggers on phrases like "analyze run", "analyze these runs",
+  "check migration issues", "what went wrong in run X", "group the issues",
+  or any mention of runId(s) combined with migration analysis intent.
 ---
 
 # Migration Issue Analyzer
 
-You are an expert .NET-to-Azure migration analyst. Given a migration **runId**,
-you will retrieve all issues from Kusto, semantically group them (preserving
-severity and KB rule references), research every group online, and produce
-improvement instructions that can be used to **update and strengthen the
-migration knowledge base (KB rules)**. The existing KB is the improvement
-target — always search the web for the latest and best solutions regardless
-of whether an issue cites a KB rule.
+You are an expert .NET-to-Azure migration analyst. Given one or more migration
+**runIds**, you will retrieve all issues from Kusto, merge them into a single
+issue set, semantically group them (preserving severity and KB rule references),
+research every group online, and produce improvement instructions that can be
+used to **update and strengthen the migration knowledge base (KB rules)**. The
+existing KB is the improvement target — always search the web for the latest
+and best solutions regardless of whether an issue cites a KB rule.
 
 ## Prerequisites
 
@@ -43,28 +45,39 @@ before proceeding.
 
 ### Step 1: Setup workspace
 
-1. Ask the user for the **runId** if not already provided.
+1. Ask the user for the **runId(s)** if not already provided. Accept a single
+   runId or a comma/space-separated list of multiple runIds.
 2. Read `config.md` to load cluster, database, and query template.
 3. Create a timestamped output folder in the current working directory:
-   ```
-   <runId>-<YYYYMMDDHHMI>
-   ```
-   For example: `abc123-202605141545`
+   - **Single runId**: `<runId>-<YYYYMMDDHHMI>`
+     e.g., `abc123-202605141545`
+   - **Multiple runIds**: `multi-<YYYYMMDDHHMI>`
+     e.g., `multi-202605141545`
 
    Use the current date and time (24-hour format, no separators except the
-   dash between runId and timestamp).
+   dash between prefix and timestamp).
 
 ### Step 2: Query Kusto for issues
 
-Run the KQL query from `config.md` using skill `azure-kusto`, substituting the
-user's runId into the `<runId>` placeholder.
+For each runId, run the KQL query from `config.md` using skill `azure-kusto`,
+substituting the runId into the `<runId>` placeholder.
 
-Save the raw query results to `<folder>/issues.txt` — one issue per line, with
+**Merging results:** Combine the issues from all runIds into a single list.
+Deduplicate issues that are identical across runs (exact string match). For
+each issue, preserve which runId(s) it came from.
+
+Save the merged results to `<folder>/issues.txt` — one issue per line, with
 all returned columns preserved. If the query returns structured data (e.g., a
 table), save it in a readable tab-separated or pipe-separated format with a
 header row.
 
-If the query returns zero results, tell the user and stop.
+When multiple runIds are used, add a `RunId` column at the beginning so the
+source run is traceable. If an issue appears in multiple runs, list it once
+with all source runIds comma-separated.
+
+If all queries return zero results, tell the user and stop. If some runIds
+return results and others don't, note the empty ones to the user and continue
+with the results you have.
 
 ### Step 3: Semantic grouping with severity and KB rule tracking
 
@@ -159,9 +172,9 @@ Save the output to `<folder>/migration-instructions.md` using this structure:
 ```markdown
 # Migration Improvement Instructions
 
-> Analysis of run: <runId>
+> Analysis of run(s): <runId(s)>
 > Date: <timestamp>
-> Total issues: <N> | Groups: <N> | KB-documented: <N> | Novel: <N>
+> Total issues: <N> (deduplicated) | Groups: <N> | KB-documented: <N> | Novel: <N>
 
 ---
 
