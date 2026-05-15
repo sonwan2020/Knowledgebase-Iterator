@@ -37,6 +37,8 @@ every run to get:
 - **Cluster** — the Kusto cluster URL
 - **Database** — the database name
 - **Query template** — the KQL query to execute (with `<runId>` placeholder)
+- **Knowledgebase source** — the GitHub repo, branch, path, and account needed
+  to fetch the current KB file
 
 If `config.md` is missing or incomplete, ask the user for the missing values
 before proceeding.
@@ -79,11 +81,36 @@ If all queries return zero results, tell the user and stop. If some runIds
 return results and others don't, note the empty ones to the user and continue
 with the results you have.
 
+### Step 2.5: Fetch the current knowledgebase
+
+Using the knowledgebase source settings from `config.md`, fetch the current KB
+file from GitHub. Use the `gh` CLI command specified in config.md (switching
+to the correct GitHub account first).
+
+Save the KB content to `<folder>/knowledgebase.md` for reference throughout the
+remaining steps.
+
+Read the KB file and build a mental map of:
+- **All numbered conversion rules** (e.g., Rule 1 through 15) — their titles,
+  what each rule covers, and the specific guidance they provide
+- **The KB format** — how rules are structured (heading level, bullet points,
+  code examples, sub-items) so improvement suggestions can match it
+- **Guiding principles** — the overall philosophy of the KB
+
+This KB is the document you are trying to improve. It is not a trusted oracle —
+issues in the benchmark may reveal gaps, inaccuracies, or missing rules.
+
 ### Step 3: Semantic grouping with severity and KB rule tracking
 
 Read `<folder>/issues.txt` and analyze every issue. Group them **semantically**
 — not by exact string match, but by the underlying problem they represent. Two
 issues with different wording but the same root cause belong in one group.
+
+**Use the KB as a grouping reference.** Consult `<folder>/knowledgebase.md` to
+map issues to existing KB rules. The KB's numbered rules (1–15) and guiding
+principles define the known problem categories. When an issue clearly relates
+to an existing KB rule, tag the group with that rule number. Issues that don't
+map to any existing rule represent potential new rules — tag them as "—".
 
 While grouping, extract and preserve two additional dimensions per issue:
 
@@ -152,12 +179,15 @@ For each group:
      deprecated feature, missing dependency, etc.)
    - Whether this is a known limitation or a fixable problem
 
-4. **Compare with existing KB** — If the group cites a KB rule, compare what
-   your research found against what the current KB rule recommends:
-   - Is the KB rule's guidance still accurate and complete?
+4. **Compare with existing KB** — Read the corresponding rule in
+   `<folder>/knowledgebase.md` and compare what your research found against
+   the rule's current content:
+   - Is the rule's guidance still accurate and complete?
    - Are there better approaches available now (newer APIs, updated patterns)?
-   - Does the KB rule miss edge cases that the research uncovered?
-   - Note any gaps or improvements needed in the Research Findings section.
+   - Does the rule miss edge cases that the research uncovered?
+   - Does the rule's wording effectively prevent the issue from occurring?
+   - For groups with no matching KB rule, identify where in the KB a new rule
+     should be inserted (after which existing rule number).
 
 5. **Compose improvement instruction** — Write a clear, actionable instruction
    that can be used to **create or update a KB rule**. The instruction should:
@@ -166,6 +196,17 @@ For each group:
    - Follow Azure best practices
    - Be practical for automated migration tooling
    - If updating an existing KB rule, explicitly state what should change
+   - **Match the KB's existing format.** The KB uses `### N. Rule Title`
+     headings with bullet points, sub-items, and inline code examples. Write
+     suggested new rules or rule edits in this same style so they can be
+     dropped into the KB with minimal reformatting.
+   - If you have suggestions for improving the KB's overall format or
+     structure (e.g., adding a new section, changing how rules are organized),
+     note them separately at the end — do not mix format suggestions with
+     content suggestions.
+
+**Important:** Do NOT modify the KB file directly. All output is advisory —
+suggestions for the user to review and apply manually.
 
 Save the output to `<folder>/migration-instructions.md` using this structure:
 
@@ -191,12 +232,18 @@ Save the output to `<folder>/migration-instructions.md` using this structure:
 
 ### KB Rule Status
 <One of:>
-- "**Existing: KB Rule N** — <assessment of current rule accuracy>. Suggested
-  updates: <what should change, if anything>."
-- "**New rule needed** — no existing KB rule covers this issue."
+- "**Existing: Rule N — <rule title>** — <assessment of current rule's
+  accuracy and completeness based on comparing it with your research>.
+  Suggested updates: <specific changes to the rule's wording, bullets, or
+  code examples, written in the KB's existing format>."
+- "**New rule needed (suggested: Rule N+1)** — no existing KB rule covers
+  this issue. Suggested rule text: <draft rule written in the KB's
+  `### N. Title` + bullet points + code example format>."
 
 ### Improvement Instruction
-<Clear, actionable instruction to create or update a KB rule for this issue>
+<Clear, actionable instruction to create or update a KB rule for this issue.
+For existing rules, quote the current text and show the proposed replacement.
+For new rules, provide the full draft in KB format.>
 
 ---
 
@@ -225,9 +272,15 @@ After generating the instructions file, present the user with:
 
 - If the skill `azure-kusto` is not available, ask the user how to connect or
   whether they can provide the issues data directly (e.g., paste or file).
+- If the KB file cannot be fetched from GitHub (auth failure, branch changed),
+  ask the user to provide the KB content directly or update `config.md` with
+  the correct repo/branch/path settings.
 - If web search is unavailable, still produce instructions based on your
   existing knowledge, but flag that research was limited.
 - For very large result sets (>1000 issues), mention the scale to the user and
   confirm they want to proceed, as grouping will take time.
-- To change the Kusto cluster, database, or query, edit `config.md` in this
-  skill's folder.
+- To change the Kusto cluster, database, query, or KB source, edit `config.md`
+  in this skill's folder.
+- This skill produces **suggestions only** — it never modifies the KB file
+  directly. All proposed rule changes are written to the output folder for
+  the user to review and apply.
